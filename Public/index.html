@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Weather Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 420px; margin: 60px auto; text-align: center; }
+    select, button { font-size: 16px; padding: 8px; }
+    #cities select { display: block; margin: 0 auto 8px; }
+    #result { margin-top: 24px; font-size: 20px; }
+    .card { border-top: 1px solid #ddd; padding: 8px 0; }
+    .error { color: #c0392b; }
+  </style>
+</head>
+<body>
+  <h1>Weather Weather lang</h1>
+  <!-- No API key anywhere in this file -->
+  <div id="cities">
+    <select class="city"></select>
+  </div>
+  <button onclick="getWeather()">Get weather</button>
+  <div id="result"></div>
+
+  <script>
+    const CITIES = ["Manila", "Quezon City", "Cebu", "Davao", "Baguio", "Iloilo",
+                    "Bacolod", "Cagayan de Oro", "Zamboanga", "Tacloban", "Puerto Princesa"];
+
+    function fillDropdown(select, selected) {
+      select.className = "city";
+      select.innerHTML = CITIES.map(c => `<option${c === selected ? " selected" : ""}>${c}</option>`).join("");
+    }
+
+    function addCity() {
+      const select = document.createElement("select");
+      fillDropdown(select, CITIES[document.querySelectorAll(".city").length % CITIES.length]);
+      document.getElementById("cities").appendChild(select);
+    }
+
+    // Fill the two starting dropdowns with Manila and Davao
+    const [first, second] = document.querySelectorAll(".city");
+    fillDropdown(first, "City 1");
+
+    async function fetchCity(city) {
+      const res = await fetch("/api/weather?city=" + encodeURIComponent(city));
+      const data = await res.json();
+
+      if (!res.ok) {
+        return `<div class="card"><p class="error">${city} – ${res.status}: ${data.error}</p></div>`;
+      }
+      return `
+        <div class="card">
+          <img src="${data.icon}" alt="">
+          <p><b>${data.city}, ${data.country}</b></p>
+         <p>${data.tempC} °C – ${data.condition}</p>
+        </div>`;
+    }
+
+    async function getWeather() {
+      const cities = [...document.querySelectorAll(".city")]
+        .map(select => select.value)
+        .filter(Boolean);
+      const result = document.getElementById("result");
+      result.textContent = "Loading...";
+
+      // Fetch all cities at the same time instead of one after another
+      const cards = await Promise.all(cities.map(fetchCity));
+      result.innerHTML = cards.join("");
+    }
+
+  </script>
+</body>
+</html>
